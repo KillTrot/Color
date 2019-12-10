@@ -12,9 +12,16 @@ from collections import deque
 from imutils.video import VideoStream
 import argparse
 
-cam = cv2.VideoCapture(1)
+cam = cv2.VideoCapture(2)
 
 cv2.namedWindow("test")
+
+gammaBlue = 3
+gammaYellow = 23
+gammaOrange = 8
+gammaRed = 28
+gammaGreen = 0
+gammaWhite = 13
 
 def adjust_gamma(image, gamma=1.0):
 	invGamma = 1.0 / gamma
@@ -167,6 +174,20 @@ def cornerDedection():
 def nothing(x):
     pass
 
+def test3method():
+    while True:
+        ret, image = cam.read()
+        cv2.flip(image, 2)
+        original = image.copy()
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+        mask = np.zeros(image.shape, dtype=np.uint8)
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (7,7))
+        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel, iterations=1)
+        mask = cv2.merge([mask, mask, mask])
+        mask1 = cv2.bitwise_or(mask, color_mask)
+        cv2.imshow("Mask", mask1)
+        cv2.waitKey(1)
+
 def test2method():
     pos = 10
     cv2.namedWindow('Farbig')
@@ -196,14 +217,14 @@ def test2method():
         cv2.imshow('image', image)
         mask = np.zeros(image.shape, dtype=np.uint8)
         
-        colors = {
-            'r': ([141, 40, 40], [255, 255, 255]), #Red - x
-            'b': ([110,50,50], [130,255,255]), #Blue - x
-            'y': ([20, 100, 100], [30, 255, 255]), #Yellow 
-            'w': ([70, 10, 130], [180, 110, 255]), #White
-            'g': ([36,0,0], [86,255,255]), #Green - x
-            'o': ([5,50,50], [15, 255, 255]) #Orange
-            }
+        #colors = {
+        #    'r': ([141, 40, 40], [255, 255, 255]), #Red - x
+        #    'b': ([110,50,50], [130,255,255]), #Blue - x
+        #    'y': ([20, 100, 100], [30, 255, 255]), #Yellow 
+        #    'w': ([70, 10, 130], [180, 110, 255]), #White
+        #    'g': ([36,0,0], [86,255,255]), #Green - x
+        #    'o': ([5,50,50], [15, 255, 255]) #Orange
+        #    }
 
         #colors = {
         #    'r': ([120,120,140], [180,250,200]), #Red - x
@@ -213,6 +234,20 @@ def test2method():
         #    'g': ([60,110,110], [100,220,250]), #Green - x
         #    'o': ([5, 150, 150], [15, 235, 250]) #Orange
         #    }
+
+        colors ={
+                    'w':([0, 0, 116], [180, 57, 255]),
+    
+                    #'Light-red':([0,38, 56], [10,255,255]),
+                    'o':([10, 38, 71], [20, 255, 255]),
+                    'y':([18, 28, 20], [33, 255, 255]),
+                    'g':([36, 10, 33], [88, 255, 255]), 
+                    'b':([87,32, 17], [120, 255, 255]),
+                    #'purple':([138, 66, 39], [155, 255, 255]),
+                    'r':([170,112, 45], [180,255,255]),
+    
+                    #'black':([0, 0, 0], [179, 255, 50]),      
+                    } 
     
         # Color threshold to find the squares
         open_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (7,7))
@@ -223,14 +258,16 @@ def test2method():
             upper = np.array(upper, dtype=np.uint8)
             color_mask = cv2.inRange(image, lower, upper)
             color_mask = cv2.morphologyEx(color_mask, cv2.MORPH_OPEN, open_kernel, iterations=1)
-            color_mask = cv2.morphologyEx(color_mask, cv2.MORPH_CLOSE, close_kernel, iterations=5)
+            color_mask = cv2.morphologyEx(color_mask, cv2.MORPH_CLOSE, close_kernel, iterations=1)
         
             color_mask = cv2.merge([color_mask, color_mask, color_mask])
             mask = np.zeros(image.shape, dtype=np.uint8)
             mask = cv2.bitwise_or(mask, color_mask)
             print(color)
             gray = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
-            cnts = cv2.findContours(gray, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            dilate = cv2.dilate(gray, open_kernel, iterations=1);
+            cnts = cv2.findContours(dilate, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
             cnts = cnts[0] if len(cnts) == 2 else cnts[1]
             # Sort all contours from top-to-bottom or bottom-to-top
             contoursSquare = []
